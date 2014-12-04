@@ -1,0 +1,14 @@
+<html>
+{head}
+<body>
+  <div id="wrap">
+    {header}
+    <div id="content-wrap">
+      <div id="content">
+        {content}
+      </div>
+    </div>
+    {footer}
+  </div>
+</body>
+</html>
