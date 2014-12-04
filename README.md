@@ -26,11 +26,11 @@ There are surely many, many possibilities here. We just have to find a way how t
 
 ## Next Steps
 
-* manage remote file access in ajax statements by catching specific statements and having Python handle downloading and sending them (this should be easily doable by defining a specific "outgoing portal" which is catched by the server and then served accordingly)
+* manage remote file access in ajax statements by catching specific statements and having Python handle downloading and sending them (this should be easily doable by defining a specific "outgoing portal" which is catched by the server and then served accordingly) **already done, at least basically**
 * manage the whole interactive interface and define the wanted functionalities
-* manage a cache directory in which data will be stored temporarily (especially when downloading things with urllib, but this could be the basic Python cache)
-* arrange the server in such a way that once it is being given Markdown files it serves them with a given header and converts them to HTML
-* arrange some quit-button that stops the server process (basic should be some interface website, the very index
+* manage a cache directory in which data will be stored temporarily (especially when downloading things with urllib, but this could be the basic Python cache) 
+* arrange the server in such a way that once it is being given Markdown files it serves them with a given header and converts them to HTML **done**
+* arrange some quit-button that stops the server process (basic should be some interface website) **done, added a quit button that stops the server, but the user has to close the website**
 
 ## Current experience with Remote access
 
@@ -48,6 +48,35 @@ This would give the user the "look and feel" of some application with regular lo
 ## User access to home directory files
 
 We provide general user access to home directory files in a very simply way by which the user's home directory is also searched for files which cannot be served by the server internally. This is useful for later on when the user may want to load external files quickly.
+
+## Modularizing the application
+
+In the current version, all code is in the server.py file. This should be changed: Modules need to be provided for each access to specific lingpy functions. The current HTML structure has:
+
+* HOME: basic homepage that introduces the server
+* Models (allowing the user to define his or her own models)
+  - Segmentation (dealing with segmentation issues, like tokenization, syllable segmentation, and the like
+  - sound classes (dealing with soudn class conversion)
+  - prosodic strings (dealing with the representation of prostrings)
+  - scoring functions (dealing with the way segments are scored in sequence alignment)
+* Sequences (allowing the user to test segmentation with specific models, but also to align sequences, basically provided for illustration of algorithms and testing)
+  - segmentize (dealing with segmentation)
+  - sound classes (dealing with sound class conversion)
+  - pairwise (dealing with pairwise alignments **already more or less implemented**)
+  - multiple (dealing with multiple alignments **already more or less implemented**)
+* Lanugages (dealing with whole applications, allows quick access without creating a project to main LingPy functionalities)
+  - cognate detection (dealing with basic cognate detection)
+  - multiple alignment (dealing with alignment representation of detected cognates)
+  - borrowing detection (dealing with incongruencies in the cognate sets, using MLN method)
+  - cluster (dealing with basic cluster applications, using LingPy's cluster module to compute phylogenetic trees and the like
+* projects (core part of the server that allows users to create their projects and use LingPy to help where it can help while users will be able to interfere with the workflow by applying manual corrections)
+  - create (create a new project, using input files, templates, and the like)
+  - browse (allow user to browse ongoing projects at different stages)
+* edit (link to the edictor, should later be merged with "browse" and allow the user to manually edit projects with the edictor)
+* close (closes the application **already implemented**)
+
+This strucutre is not complete and perfect at the moment, and it needs refinement, but having both the direct access to lingpy functions and providing the possibility to work on whole projects should be one general goal here.
+  
 
 
 
