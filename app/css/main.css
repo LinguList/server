@@ -692,5 +692,9 @@ label.checkbox {
   cursor: pointer;
 }
 
+.help_text {
+  font-size: 90%;
+}
+
 @import url(bootstrap-theme.css);
 

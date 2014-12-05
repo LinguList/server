@@ -142,30 +142,6 @@ function outputUpdate(vol,what) {
   document.querySelector('#'+what).innerHTML = vol;
 }
 
-function toggleSettings() {
-  var settings = document.querySelector('#settings_table');
-  if (settings.style.display == 'none') {
-    settings.style.display = 'block';
-    document.querySelector('#settings_toggle').innerHTML = 'HIDE SETTINGS';
-  }
-  else {
-    settings.style.display = 'none';
-    document.querySelector('#settings_toggle').innerHTML = 'SHOW SETTINGS';
-  }
-}
-
-function toggleInfo() {
-  var settings = document.querySelector('#info_text');
-  if (settings.style.display == 'none') {
-    settings.style.display = 'block';
-    document.querySelector('#info_toggle').innerHTML = 'HIDE HELP';
-  }
-  else {
-    settings.style.display = 'none';
-    document.querySelector('#info_toggle').innerHTML = 'SHOW HELP';
-  }
-
-}
 
 
 function palign() {
