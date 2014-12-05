@@ -56,10 +56,10 @@
           <ul class="dropdown-menu" role="menu">
             <li><a href="create.md">Create</a></li>
             <li><a href="browse.md">Browse</a></li>
+						<li><a href="edictor/index.html">Edit</a></li>
           </ul>
         </li>		
-				<li id="navigation_home"><a href="edictor/index.html">Edit</a></li>
-				<li id="navigation_home"><a href="stop.stop">Close</a></li>
+				<li><a href="stop.stop">Close</a></li>
 			</ul>
 		</div>
 	</nav>
