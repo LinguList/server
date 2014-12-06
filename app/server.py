@@ -17,7 +17,6 @@ __date__="2014-11-28"
 from lingpy import *
 from lingpy.convert.html import *
 from lingpy.convert.strings import *
-from lingpy.settings import rcParams
 import lingpy
 
 import time
@@ -39,7 +38,8 @@ import getpass
 
 # internal imports
 from code.files import handle_markdown
-from code.settings import SETTINGS
+from code.settings import SETTINGS, rcParams, modify_segmentation,\
+        show_segmentations, load_segmentation, show_data
 from code.align import pairwise, multiple
 from code.query import *
 
@@ -66,7 +66,7 @@ class MyHandler(server.BaseHTTPRequestHandler):
         # split the path
         path, query, fragment = split_url(s.path)
 
-        # prepare headers
+        # prepare headers, needs refinement for more stuff apart from css, html
         s.send_response(200)
 
         if path.endswith('.css'):
@@ -75,7 +75,7 @@ class MyHandler(server.BaseHTTPRequestHandler):
             s.send_header("Content-type", "text/html")
         s.end_headers()
         
-        # serve msa output if the path ends on .msa
+        # serve msa and psa output if the path ends on .msa
         if path.endswith('.msa'):
             msa = multiple(query)
             s.wfile.write(bytes(msa,'utf-8'))
@@ -83,22 +83,26 @@ class MyHandler(server.BaseHTTPRequestHandler):
         elif path.endswith('.psa'):
             psa = pairwise(query)
             s.wfile.write(bytes(psa, 'utf-8'))
-
+        
+        # serve markdown (basic) output in html if path ends with .md
         elif path.endswith('.md'):
             new_path = '.'+path.replace('/', os.sep)
             html = handle_markdown(new_path)
             s.wfile.write(bytes(html, 'utf-8'))
-
+        
+        # break the server on .stop
         elif path.endswith('.stop'):
             
             s.wfile.write(b"<p><b>Server was shut down.<b></p>")
             p = SETTINGS['server']
             os.kill(p.pid, signal.SIGKILL)
-
+        
+        # allow for remote access using remote queries
         elif path.endswith('.remote'):
             txt = remote(query)
             s.wfile.write(txt)
-
+        
+        # specific output for the edictor, needs refinement
         elif 'triples.php' in path:
             query = 'url=http://tsv.lingpy.org/triples/triples.php?'+query
             txt = remote(query)
@@ -114,7 +118,7 @@ class MyHandler(server.BaseHTTPRequestHandler):
             txt = remote(query, auth=True)
             s.wfile.write(txt)
         
-        # if the path ends with ".rc" we server rcParams as json
+        # if the path ends with ".rc" we serve lingpy.settings.rcParams as json
         elif path.endswith('.rc'):
             
             d = {}
@@ -127,12 +131,22 @@ class MyHandler(server.BaseHTTPRequestHandler):
 
             txt = json.dumps(d)
             s.wfile.write(bytes(txt, 'utf-8'))
-
+        
+        # settings is the ending to change various settings by modifying
+        # lingpy.settings.rcParams
         elif path.endswith('.settings'):
             
             val = decode_query(query)
+            
+            # we check for the type argument of the queries to distinguish
+            # different types
 
-            if val['type'] == 'segmentation':
+            # store_segmentation means storing a specific setting for vowels,
+            # diacritics, and the like, which is used in ipa2tokens of
+            # lingpy.sequence.sound_classes
+            if val['type'] == 'store_segmentation':
+
+                # XXX we need a real handler here
                 val_string = json.dumps(val)
 
                 with open(
@@ -141,8 +155,39 @@ class MyHandler(server.BaseHTTPRequestHandler):
                         ) as f:
                     f.write(val_string)
 
-            s.wfile.write(b'success');
+                # dummy output
+                s.wfile.write(b'success')
+
+            # modify segmentation modifies the current standard segmentation
+            # settings in rcParams
+            elif val['type'] == 'modify_segmentation':
+                
+                modify_segmentation(val)
+                s.wfile.write(b'modified\n')
             
+            # return all segmentations in settings.segmentation (encoded as
+            # json)
+            elif val['type'] == 'show_segmentations':
+
+                s.wfile.write(bytes(show_segmentations(),'utf-8'))
+            
+            # load a given segmentation and return it as json
+            elif val['type'] == 'load_segmentation':
+
+                s.wfile.write( bytes( load_segmentation(val['schema']), 
+                    'utf-8'))
+
+            # modify a given sound class model
+            elif val['type'] == 'load_sound_classes':
+
+                s.wfile.write(bytes(load_sound_classes(val['schema']),
+                    'utf-8'))
+
+
+            # retrieve basic data for available data
+            elif val['type'] == 'show_data':
+
+                s.wfile.write(bytes(show_data(val['format']),'utf-8'))
         
         # serve normal output for traditional path endings
         elif True in [path.endswith(x) for x in [

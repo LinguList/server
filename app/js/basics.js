@@ -54,19 +54,10 @@ function deserialize_object(url) {
   return out;
 }
 
-/* testing the functions for node js */
-//var url = 'http://schokolade.de?arsch=wurst&arsch=scheiben&schweine=backe';
-//
-//var bla = deserialize_object(url);
-//var blu = serialize_object(bla)
-//console.log(deserialize_object(url));
-//console.log(blu);
-
-
 function toggleSettings() {
   var settings = document.querySelector('#settings_table');
   if (settings.style.display == 'none') {
-    settings.style.display = 'block';
+    settings.style.display = 'table';
     document.querySelector('#settings_toggle').innerHTML = 'HIDE SETTINGS';
   }
   else {

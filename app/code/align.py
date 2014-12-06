@@ -1,18 +1,19 @@
 # author   : Johann-Mattis List
 # email    : mattis.list@uni-marburg.de
 # created  : 2014-12-05 10:33
-# modified : 2014-12-05 10:33
+# modified : 2014-12-06 13:34
 """
 Alignment backend for LingPy Server.
 """
 
 __author__="Johann-Mattis List"
-__date__="2014-12-05"
+__date__="2014-12-06"
 
 from lingpy import *
 from lingpyd.convert.html import *
 from lingpyd.convert.strings import *
 
+from .util import normalize_path
 from .query import decode_query, encode_query
 
 def pairwise(query):
@@ -31,11 +32,20 @@ def pairwise(query):
 
     data = decode_query(query)
     
-    # convert seqs to correct format
-    seqs = []
-    for seq in data['seqs']:
-        seqA,seqB = seq.split('//')
-        seqs += [(seqA.strip(),seqB.strip())]
+    # check for seqs or file 
+    if 'seqs' in data:
+
+        # convert seqs to correct format
+        seqs = []
+        for seq in data['seqs']:
+            seqA,seqB = seq.split('//')
+            seqs += [(seqA.strip(),seqB.strip())]
+
+    else:
+
+        # get the psa object
+        psa = PSA(normalize_path('../data/psa/'+data['file']))
+        seqs = psa.seqs
 
     # modify floats and the like
     for k,v in data.items():
@@ -47,6 +57,7 @@ def pairwise(query):
                     data[k] = int(v)
                 except ValueError:
                     data[k] = v
+
     
     # check for vowel merge
     if 'merge_vowels' in data:
@@ -64,7 +75,7 @@ def pairwise(query):
     for k in defaults:
         if k not in data:
             data[k] = defaults[k]
-    
+
     if data['method'] == 'sca':
         psa = Pairwise(seqs, merge_vowels=data['merge_vowels'])
         psa.align(**data)
@@ -132,8 +143,12 @@ def multiple(query):
     for k in defaults:
         if k not in data:
             data[k] = defaults[k]
-
-    msa = Multiple(data['seqs'], merge_vowels=data['merge_vowels'])
+    
+    # check for input format
+    if 'seqs' in data:
+        msa = Multiple(data['seqs'], merge_vowels=data['merge_vowels'])
+    elif 'file' in data:
+        msa = MSA(normalize_path('../data/msa/'+data['file']))
     
     # check which mode
     if data['method'] == 'progressive':

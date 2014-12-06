@@ -655,13 +655,14 @@ label.checkbox {
 
 .keyword {
   color: #6095be;
+  font-weight: bold;
 }
+
 .keywords {
-  font-size: 80%;
   color: black;
   padding: 1px!important;
   margin: 1px!important;
-  line-height: 15px!important;
+  line-height: 20px!important;
 }
 .keywords label {
   padding: 0px!important;
@@ -674,18 +675,6 @@ label.checkbox {
   text-align: justify;
 }
 
-.options {
-  border-spacing: 2px;
-  border-collapse: separate;
-}
-.options th {
-  border: 2px solid black;
-  padding: 5px;
-}
-.options td{
-  border: 2px solid black;
-  padding: 5px;
-}
 
 .toggle {
   color: #6095be;
@@ -694,6 +683,13 @@ label.checkbox {
 
 .help_text {
   font-size: 90%;
+}
+
+h3.heading {
+  font-weight: bold;
+}
+h4.heading {
+  font-weight: bold;
 }
 
 @import url(bootstrap-theme.css);

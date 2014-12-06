@@ -2,41 +2,73 @@
 @header: default
 @footer: default
 @body: default
-@title: Multiple Alignments
-@js: basics,jquery,bootstrap,align,prison/lib/highlight,prison/lib/sampa
-@css: main,bootstrap,alignments
+@title: Settings
+@js: basics,jquery,settings,bootstrap,prison/lib/sampa,settings,settings.utils
+@css: main,bootstrap
 
-<h3 class="heading">Multiple Phonetic Alignment (<span onclick="toggleInfo()" class="toggle" id="info_toggle">SHOW HELP</span>,
-<span onclick="toggleSettings()" class="toggle" id="settings_toggle">SHOW SETTINGS</span>)</h3>
+<h3 class="heading">Settings (<span onclick="toggleInfo()" class="toggle" id="info_toggle">SHOW HELP</span>)</h3>
 <div class="help_text" style="display:none" id="info_text">
 <p>
-Paste or input your phonetic sequences in the text field below and press the "SUBMIT" button to align them.
-Use the settings below to modify the basic parameters of the algorithm. As a default, you can input your data both using
-IPA or SAMPA. If you input SAMPA values, they will be automatically converted into IPA. If you want to avoid this behaviour,
-check "other formats" in the settings below. Your sequences will be automatically segmentized into phonologically meaningful
-units by LingPy. If you want to force LingPy to use your predefined segmentation style, just input your sequences with meaningful units separated by a space.
+Basic settings for LingPy sessions. Use this interface to define which kinds of sequences you intend to analyze (plain IPA, ASJP, user-defined), or how you want to analyze your alignments.
 </p>
 </div>
 
-<table id="settings_table" style="display:none" class="table table-condensed table-striped table-bordered">
+<br>
+<p><b>Select the basic setting for segmentation:</b></p>
+<div class="form-inline">
+<select class="form-inline form-control" id="segmentations"></select>
+<button onclick="redefine_segmentation()" class="btn">SUBMIT</button>
+</div>
+
+<br>
+<p><b>Select a general schema (IPA or ASJP):</b></p>
+<div class="form-inline">
+<select class="form-control" id="schema">
+<option value="asjp">ASJP</option>
+<option value="ipa" selected>IPA</option>
+</select>
+<button onclick="redefine_schema()" class="btn">SUBMIT</button>
+</div>
+
+<br>
+<p><b>Select the default sound class model: </b></p>
+<div class="form-inline">
+<select class="form-control" id="sound_class_models"></select>
+<button onclick="redefine_default_model()" class="btn">SUBMIT</button>
+</div>
+
+<br>
+<p><b>Select your basic settings for alignment analyses (pairwise and multiple):</b></p>
+<table id="settings_table" style="display:table" class="table table-condensed table-striped table-bordered">
 <thead>
+<tbody>
 <tr>
 <th>Keyword</th>
 <th>Values </th>
 </tr>
-</thead>
-<tbody>
 <tr>
-<td class="keyword">Input Format</td>
+<td class="keyword">Scoring Settings (only pairwise)</td>
 <td>
-<div class="keywords form-group form-inline" id="ml-input">
-<label>IPA or SAMPA</label><input type="radio" name="ml-input" value="sampa" checked />
-<label>other formats</label><input type="radio" name="ml-input" value="ipa" />
+<div class="keywords form-group form-inline" id="pw-distance">
+<label>distance</label><input type="radio" name="pw-distance" value="True" checked />
+<label>similarity</label><input type="radio" name="pw-distance" value="False" />
+<label>Hamming</label><input type="radio" name="pw-distance" value="hamming" />
 </div>
 </td>
 </tr>
 <tr>
-<td class="keyword">Method</td>
+<td class="keyword">Mode (only pairwise)</td>
+<td>
+<div class="keywords form-group form-inline" id="pw-mode">
+<label>global</label><input type="radio" name="pw-mode" value="global" checked />
+<label>dialign</label><input type="radio" name="pw-mode" value="dialign" />
+<label>semi-global</label><input type="radio" name="pw-mode" value="overlap" />
+<label>local</label><input type="radio" name="pw-mode" value="local" />
+</div>
+</td>
+</tr>
+<tr>
+<td class="keyword">Method (only multiple)</td>
 <td>
 <div class="keywords form-group form-inline" id="ml-method">
 <label>progressive</label><input type="radio" name="ml-method" value="progressive" checked />
@@ -90,7 +122,7 @@ units by LingPy. If you want to force LingPy to use your predefined segmentation
 </td>
 </tr>
 <tr>
-<td class="keyword">Gap Weight</td>
+<td class="keyword">Gap Weight (only multiple)</td>
 <td>
 <div class="keywords form-group form-inline">
 <input class="form-control" id="ml-gap_weight" type="range" min="0" value="0.5" max="1" onchange="outputUpdate(value,'ml-gap_weight-fader')" step="0.05" />
@@ -99,7 +131,7 @@ units by LingPy. If you want to force LingPy to use your predefined segmentation
 </td>
 </tr>
 <tr>
-<td class="keyword">Guide Tree</td>
+<td class="keyword">Guide Tree (only multiple)</td>
 <td>
 <div class="keywords form-group form-inline" id="ml-tree_calc">
 <label>Neighbor-Joining</label><input type="radio" name="ml-tree_calc" value="neighbor" checked />
@@ -108,7 +140,7 @@ units by LingPy. If you want to force LingPy to use your predefined segmentation
 </td>
 </tr>
 <tr>
-<td class="keyword">Post-Processing</td>
+<td class="keyword">Post-Processing (only multiple)</td>
 <td>
 <div class="keywords form-group form-inline" id="ml-post_processing">
 <label>orphans</label><input type="checkbox" name="ml-post-processing" value="iterate_orphans" />
@@ -128,30 +160,6 @@ units by LingPy. If you want to force LingPy to use your predefined segmentation
 </tr>
 </tbody>
 </table>
+<button onclick="redefine_alignment_settings()" class="btn">SUBMIT</button>
 
-<br>
-<table>
-<tr>
-<td style="vertical-align:top">
-<p><b>Select sequences from MSA files:</b></p>
-<div class="form-group form-inline">
-<select class="form-control" id="select_msa_files"></select>
-<button class="btn btn-submit" onclick="malign('msa')" value="OK">SUBMIT</button>
-</div>
-<br>
-<p><b>Type sequences directly into the text field:</b></p>
-<textarea class="form-control" id="alms" cols="30" rows="10">
-w a l d e m a r
-w o l d e m o r t
-v l a d i m i r
-</textarea>
-<div style="margin-top:10px;margin-bottom:10px;">
-<button class="btn btn-submit" onclick="malign('seqs')" value="OK">SUBMIT</button>
-</div>
-
-</td>
-<td style="vertical-align:top;">
-<div style="float:left;display:none;margin-left:10px;border:2px solid lightgray;border-radius:5px;padding:10px;" id="alignments"></div></td></tr></table>
-
-
-
+<p><b>Select your basic settings for cognate detection analyses:</b></p>

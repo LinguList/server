@@ -7,12 +7,28 @@
  *
  */
 
+/* define a currently local default settings value */
+_SETTINGS = {};
+_SETTINGS['segmentation'] = SETTINGS['segmentation'];
+
+/* modify the default settings with ajax call */
+function reloadSettings(schema) {
+  $.ajax({
+    async: false,
+    dataType: "json",
+    url: "index.settings?type=load_segmentation&schema="+schema,
+    success: function(data) {
+      _SETTINGS = data;
+      _SETTINGS['segmentation'] = schema;
+    }
+  });
+}
 
 /* load default settings for a given item */
 function presentDefaults(what) {
 
   var node = document.getElementById(what);
-  var data = SETTINGS[what];
+  var data = _SETTINGS[what];
 
   if (what == 'diacritics' || what == 'combiners') {
     data = '◌' + data.split('').join(' ◌');
@@ -23,54 +39,56 @@ function presentDefaults(what) {
   node.value = data;
 }
 
-function retrieveDefaults(what) {
+/* function gets the value of a given setting and converts it according
+ * to specific rules so that it is easier for the user to view the data */
+function retrieveSettings(what) {
   var data = document.getElementById(what).value;
   if (what == 'diacritics' || what == 'combiners') {
-    data = data.replace('◌','').split(' ').join('');
+    data = data.replace(/[◌\s]/g,'');
   }
   else {
-    data = data.split(' ').join('');
+    data = data.replace(/\s/g,'');
   }
   return data;
 }
 
-
-/* now use the function to load the defaults */
-presentDefaults('vowels');
-presentDefaults('diacritics');
-presentDefaults('tones');
-presentDefaults('combiners');
-presentDefaults('breaks');
-
-
-
-
+/* function iterates over input fields, reads in all modifications and stores
+ * the given segmentation under the name specified by the user */
 function storeSettings() {
   
   document.getElementById('error').innerHTML = '';
 
   var settings = {};
-  settings['vowels'] = retrieveDefaults('vowels');
-  settings['diacritics'] = retrieveDefaults('diacritics');
-  settings['tones'] = retrieveDefaults('tones');
-  settings['combiners'] = retrieveDefaults('combiners');
-  settings['breaks'] = retrieveDefaults('breaks');
+  settings['vowels'] = retrieveSettings('vowels');
+  settings['diacritics'] = retrieveSettings('diacritics');
+  settings['tones'] = retrieveSettings('tones');
+  settings['combiners'] = retrieveSettings('combiners');
+  settings['breaks'] = retrieveSettings('breaks');
   
   var name = document.getElementById('settings_name').value;
   
-  if (name.replace(/[a-zA-Z_0-9]/g,'') == '' && name != '') {
-    settings['name'] = name;
-  }
-  else {
-    document.getElementById('error').innerHTML = "Your settings name should only contain letters and numbers. It cannot be empty.";
+  var error_node = document.getElementById('error');
+
+  if (name.replace(/[a-zA-Z_0-9]*/,'') != '') { 
+    error_node.innerHTML = "Your setting name should only contain letters, numbers, and the understroke.";
     return;
   }
+  else if (name == '') {
+    error_node.innerHTML = "Your setting name is not defined.";
+    return;
+  }
+  else if (available_settings.indexOf(name) != -1) {
+    error_node.innerHTML = "Your setting name is already taken.";
+    return;
+  }
+  else {
+    settings['name'] = name;
+  }
 
-
-  settings['type'] = 'segmentation';
+  settings['type'] = 'store_segmentation';
   
   var url = serialize_object(settings);
-
+  
   $.ajax({
     async: false,
     url: 'index.settings?' + url,
@@ -78,8 +96,62 @@ function storeSettings() {
       document.getElementById('error').innerHTML = "Successfully stored your data.";
       }
   });
-
-  if (success) {
-  }
-  
+  location.reload();
 }
+
+/* now use the function to load the defaults */
+function init_page() {
+
+  reloadSettings(_SETTINGS['segmentation']);
+
+  presentDefaults('vowels');
+  presentDefaults('diacritics');
+  presentDefaults('tones');
+  presentDefaults('combiners');
+  presentDefaults('breaks');
+}
+
+
+/* get segmentations, that is, all currently defined and stored segmentations */
+$.ajax({
+  async: false,
+  url: 'index.settings?type=show_segmentations',
+  success: function(data) {
+    SETTINGS['segmentations'] = data.split('\n');
+    SETTINGS['segmentations'].sort();
+  }
+});
+
+/* start the application by uploading the current segmentation options */
+var available_settings = [];
+var selector = document.getElementById('segmentations');
+var txt = '';
+for (var i=0; i<SETTINGS['segmentations'].length; i++) {
+  var segm = SETTINGS['segmentations'][i];
+  txt += '<option value="'+segm+'"';
+  console.log(SETTINGS['segmentation']);
+  if (SETTINGS['segmentation'] == segm) {
+    txt += ' selected';
+  }
+  txt += '>'+segm+'</option>';
+  available_settings.push(segm);
+}
+selector.innerHTML = txt;
+
+/* modifies current segmentation schema in order to make it easier for the 
+ * user to set up a new schema */
+function modify_segmentation() {
+  var segmentations = document.getElementById('segmentations');
+  for (var i=0,option; option=segmentations.options[i]; i++) {
+    var current_segmentation = option.value;
+    /* reload the settings */
+  
+    if (option.selected) {
+      reloadSettings(option.value);
+      break;
+    }
+  }
+  init_page();
+}
+
+init_page();

@@ -1,0 +1,9 @@
+{
+  "diacritics": "*\"",
+  "vowels": "aeiou3E",
+  "tones": "012456789",
+  "breaks" : ".-",
+  "combiners" : "~",
+  "name": "asjp",
+  "type": "segmentation"
+}

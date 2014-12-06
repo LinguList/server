@@ -1,5 +1,17 @@
+/* Module handles pairwise and multiple alignments 
+ *
+ * author   : Johann-Mattis List
+ * email    : mattis.list@lingulist.de
+ * created  : 2014-12-06 10:08
+ * modified : 2014-12-06 10:08
+ *
+ */
+
+
 var STORE = '';
-function malign() {
+
+/* carry out multiple alignments */
+function malign(dtype) {
   
   var msa = {};
 
@@ -41,15 +53,6 @@ function malign() {
     }
   }
 
-  /* get the mode for the object */
-  /*var tmp = document.getElementById('ml-mode');
-  for (var i=0,child; child=tmp.childNodes[i]; i++) {
-    if (child.checked) {
-      msa['mode'] = child.value;
-      break;
-    }
-  }*/
-
   /* get the model for the object */
   var tmp = document.getElementById('ml-model');
   for (var i=0,child; child=tmp.childNodes[i]; i++) {
@@ -83,22 +86,34 @@ function malign() {
 
   var tmp = document.getElementById('ml-restricted_chars');
   msa['restricted_chars'] = tmp.value;
-
-  /* get the data from the textarea */
-  var alm = document.getElementById('alms');
-  /* get the sequences from the data */
-  var seqs = alm.value.split(/\n/);
-  msa.seqs = [];
-  for (var i=0; i < seqs.length; i++) {
-    var seq = seqs[i];
-    if (seq.replace(/\s*/,'') != '') {
-      if (msa['input'] == 'sampa') {
-        var this_seq = sampa2ipa(seq);
+  
+  if (dtype == 'seqs') {
+    /* get the data from the textarea */
+    var alm = document.getElementById('alms');
+    
+    /* get the sequences from the data */
+    var seqs = alm.value.split(/\n/);
+    msa.seqs = [];
+    for (var i=0; i < seqs.length; i++) {
+      var seq = seqs[i];
+      if (seq.replace(/\s*/,'') != '') {
+        if (msa['input'] == 'sampa') {
+          var this_seq = sampa2ipa(seq);
+        }
+        else {
+          var this_seq = seq
+        }
+        msa['seqs'].push(this_seq);
       }
-      else {
-        var this_seq = seq
+    }
+  }
+  else {
+    var file = document.getElementById('select_msa_files');
+    for (var i=0, option; option=file.options[i]; i++) {
+      if (option.selected) {
+        msa['file'] = option.value;
+        break;
       }
-      msa['seqs'].push(this_seq);
     }
   }
   
@@ -138,13 +153,8 @@ function malign() {
   document.getElementById('alignments').style.display = 'inline';
 }
 
-function outputUpdate(vol,what) {
-  document.querySelector('#'+what).innerHTML = vol;
-}
-
-
-
-function palign() {
+/* handle pairwise alignments */
+function palign(dtype) {
   
   var psa = {};
 
@@ -202,8 +212,6 @@ function palign() {
     }
   }
 
-
-
   /* get the gop for the object */
   var tmp = document.getElementById('pw-gop');
   psa['gop'] = parseInt(tmp.value);
@@ -219,20 +227,33 @@ function palign() {
 
   /* get the data from the textarea */
   var alm = document.getElementById('alms');
-  /* get the sequences from the data */
-  var seqs = alm.value.split(/\n/);
-  psa.seqs = [];
-  for (var i=0; i < seqs.length; i++) {
-    var seq = seqs[i];
-    if (seq.replace(/\s*/,'') != '') {
-      if (seq.indexOf('//') != -1) {
-        if (psa['input'] == 'sampa') {
-          var this_seq = sampa2ipa(seq);
+  
+  /* check for dtype */
+  if (dtype == 'seqs') {
+    /* get the sequences from the data */
+    var seqs = alm.value.split(/\n/);
+    psa.seqs = [];
+    for (var i=0; i < seqs.length; i++) {
+      var seq = seqs[i];
+      if (seq.replace(/\s*/,'') != '') {
+        if (seq.indexOf('//') != -1) {
+          if (psa['input'] == 'sampa') {
+            var this_seq = sampa2ipa(seq);
+          }
+          else {
+            var this_seq = seq
+          }
+          psa['seqs'].push(this_seq);
         }
-        else {
-          var this_seq = seq
-        }
-        psa['seqs'].push(this_seq);
+      }
+    }
+  }
+  else {
+    var file = document.getElementById('select_psa_files');
+    for (var i=0, option; option=file.options[i]; i++) {
+      if (option.selected) {
+        psa['file'] = option.value;
+        break;
       }
     }
   }
@@ -240,10 +261,9 @@ function palign() {
   /* set the type of the object */
   psa['type'] = 'psa';
 
-  console.log("PSA",psa);
-
   /* create the url to be passed to ajax */
-  var psa_url = 'basic.psa?'+serialize_object(psa)
+  var psa_url = 'basic.psa?'+serialize_object(psa);
+  
   $.ajax({
         async: false,
         type: "GET",
@@ -267,15 +287,41 @@ function palign() {
     txt += '</table>';
     txt += 'Score: '+almABC[2];
   }
-  //  if (alm.slice(0,1) != '@') {
-  //    txt += '<tr>'+plotWord(alm, 'td') + '</tr>';
-  //  }
-  //  else {
-  //    var pid = alm.split(' ')[1];
-  //  }
-  //}
-  //txt = '<table>'+txt+'</table>'+'Percentage Identity: '+pid;
+
   document.getElementById('alignments').innerHTML = txt;
   document.getElementById('alignments').style.display = 'inline';
 }
 
+function createSelector() {
+  /* we check for msa files or psa files */
+  var alms = document.getElementById('select_msa_files');
+  if (alms === null) {
+    var alms = document.getElementById('select_psa_files');
+    var datatype = 'psa';
+  }
+  else {
+    var datatype = 'msa';
+  }
+
+  var files = [];
+
+  /* we retrieve the data using ajax call */
+  $.ajax({
+    async: false,
+    url: 'index.settings?type=show_data&format='+datatype,
+    success: function(data) {
+      files = data.split('\n');
+    }
+  });
+
+  /* iterate over files and add them to the selector */
+  var txt = '';
+  for (var i=0; i<files.length; i++) {
+    txt += '<option value="'+files[i]+'">'+files[i]+'</option>';
+  }
+  
+  alms.innerHTML = txt;
+
+}
+
+createSelector();

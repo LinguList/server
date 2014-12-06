@@ -15,6 +15,7 @@
 		<div class="trigger">
 			<ul class="nav navbar-nav scene_element scene_element--fadein">
 				<li id="navigation_home"><a href="index.md">Home</a></li>
+				<li><a href="settings.md">Settings</a></li>
         <li class="dropdown">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Models<span class="caret"></span></a>
           <ul class="dropdown-menu" role="menu">
