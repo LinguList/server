@@ -12,7 +12,7 @@ __date__="2014-12-05"
 import markdown
 import os
 
-from .settings import SETTINGS
+from .settings import rcParams
 
 
 def handle_markdown(path):
@@ -21,7 +21,7 @@ def handle_markdown(path):
     """
     
     # get the real path
-    real_path = os.path.join(SETTINGS['markdown'], path)
+    real_path = os.path.join(rcParams['markdown'], path)
 
     if not os.path.exists(real_path):
         return '404 FNF'

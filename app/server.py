@@ -38,8 +38,10 @@ import getpass
 
 # internal imports
 from code.files import handle_markdown
-from code.settings import SETTINGS, rcParams, modify_segmentation,\
-        show_segmentations, load_segmentation, show_data
+from code.settings import rcParams, rcParams, modify_segmentation,\
+        show_segmentations, load_segmentation, show_data, show_sound_classes,\
+        load_sound_classes, store_sound_classes, modify_sound_classes,\
+        modify_schema
 from code.align import pairwise, multiple
 from code.query import *
 
@@ -94,7 +96,7 @@ class MyHandler(server.BaseHTTPRequestHandler):
         elif path.endswith('.stop'):
             
             s.wfile.write(b"<p><b>Server was shut down.<b></p>")
-            p = SETTINGS['server']
+            p = rcParams['server']
             os.kill(p.pid, signal.SIGKILL)
         
         # allow for remote access using remote queries
@@ -177,11 +179,32 @@ class MyHandler(server.BaseHTTPRequestHandler):
                 s.wfile.write( bytes( load_segmentation(val['schema']), 
                     'utf-8'))
 
+            # modify a given sound class model and set it to new standard
+            elif val['type'] == 'modify_sound_class_model':
+
+                s.wfile.write(bytes(modify_sound_classes(val['model']),
+                    'utf-8'))
+
             # modify a given sound class model
             elif val['type'] == 'load_sound_classes':
 
-                s.wfile.write(bytes(load_sound_classes(val['schema']),
+                s.wfile.write(bytes(load_sound_classes(val['model']),
                     'utf-8'))
+
+            # retrieve all available sound class models
+            elif val['type'] == 'show_sound_classes':
+
+                s.wfile.write(bytes(show_sound_classes(),'utf-8'))
+            
+            # store sound class model defined by the user
+            elif val['type'] == 'store_sound_classes':
+
+                s.wfile.write(bytes(store_sound_classes(val),'utf-8'))
+
+            # modify settings
+            elif val['type'] == 'modify_schema':
+
+                s.wfile.write(bytes(modify_schema(val['schema']),'utf-8'))
 
 
             # retrieve basic data for available data
@@ -209,7 +232,7 @@ class MyHandler(server.BaseHTTPRequestHandler):
             # if we don't find the file, we search in the home directory
             except FileNotFoundError:
                 try:
-                    new_path = SETTINGS['home'] + path.replace('/', os.sep)
+                    new_path = rcParams['home'] + path.replace('/', os.sep)
                     with open(new_path) as f:
                         data = f.read()
                         s.wfile.write(bytes(data, 'utf-8'))
@@ -247,7 +270,7 @@ if __name__ == '__main__':
             target = lambda x: webbrowser.open(x),
             args = ['http://localhost:9000/index.md']
             )
-    SETTINGS['server'] = p1
+    rcParams['server'] = p1
     
     from sys import argv
     if 'start' in argv:

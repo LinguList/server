@@ -10,7 +10,7 @@ __author__="Johann-Mattis List"
 __date__="2014-12-05"
 
 import urllib
-from .settings import SETTINGS
+from .settings import rcParams
 
 def split_url(url):
     """
@@ -77,14 +77,14 @@ def remote(query, auth=False):
         tlu = url
         
         # get password from user
-        if not SETTINGS['pwd'] or not SETTINGS['user']:
+        if not rcParams['pwd'] or not rcParams['user']:
             user = getpass.getpass(prompt='Username: ')
             pwd = getpass.getpass()
-            SETTINGS['user'] = user
-            SETTINGS['pwd'] = pwd
+            rcParams['user'] = user
+            rcParams['pwd'] = pwd
         else:
-            user = SETTINGS['user']
-            pwd = SETTINGS['pwd']
+            user = rcParams['user']
+            pwd = rcParams['pwd']
 
         pwm.add_password(None, tlu, user, pwd)
 

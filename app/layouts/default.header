@@ -1,5 +1,5 @@
 <header class="site-header m-scene">
-	<a class="site-title" href="http://server.lingpy.org"><img src="img/lingpy.png" style="padding:2px;margin-top:0px;height:60px" alt="LingPy Server" />LingPy Server</a>
+	<a class="site-title" href="http://localhost:9000/index.md"><img src="img/lingpy.png" style="padding:2px;margin-top:0px;height:60px" alt="LingPy Server" />LingPy Server</a>
 
 	<nav class="site-nav scene_element scene_element--fadein">
 		<a href="#" class="menu-icon">
@@ -14,7 +14,6 @@
 		</a>
 		<div class="trigger">
 			<ul class="nav navbar-nav scene_element scene_element--fadein">
-				<li id="navigation_home"><a href="index.md">Home</a></li>
 				<li><a href="settings.md">Settings</a></li>
         <li class="dropdown">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Models<span class="caret"></span></a>

@@ -34,7 +34,7 @@ Basic settings for LingPy sessions. Use this interface to define which kinds of 
 <p><b>Select the default sound class model: </b></p>
 <div class="form-inline">
 <select class="form-control" id="sound_class_models"></select>
-<button onclick="redefine_default_model()" class="btn">SUBMIT</button>
+<button onclick="redefine_sound_class_model()" class="btn">SUBMIT</button>
 </div>
 
 <br>

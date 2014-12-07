@@ -13,6 +13,7 @@ from lingpy import *
 from lingpyd.convert.html import *
 from lingpyd.convert.strings import *
 
+from .settings import rcParams
 from .util import normalize_path
 from .query import decode_query, encode_query
 
@@ -103,6 +104,12 @@ def pairwise(query):
         else:
             cdist = dist
         txt += ' '.join(almA) + '//' + ' '.join(almB) + '//' + '{0:.2f}'.format(cdist) + '\n'
+    
+    # pass the object reference to rcParams to make it usable by other
+    # functions, currently, we have the problem that we don't have a unified
+    # object to use here, so we just use the alignments that were carried out
+    # already
+    rcParams['psa'] = alms
 
     return txt
 
@@ -177,5 +184,9 @@ def multiple(query):
 
     txt = '\n'.join([' '.join(alm) for alm in data['alignments']])
     txt += '\n@PID: {0}'.format(int(100 * data['pid']))
+    
+    # pass the object reference to rcParams to make it retrievable in other
+    # applications
+    rcParams['msa'] = msa
 
     return txt 

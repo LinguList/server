@@ -9,7 +9,7 @@
 
 /* define a currently local default settings value */
 _SETTINGS = {};
-_SETTINGS['segmentation'] = SETTINGS['segmentation'];
+_SETTINGS['segmentations_current'] = SETTINGS['segmentations_current'];
 
 /* modify the default settings with ajax call */
 function reloadSettings(schema) {
@@ -19,7 +19,7 @@ function reloadSettings(schema) {
     url: "index.settings?type=load_segmentation&schema="+schema,
     success: function(data) {
       _SETTINGS = data;
-      _SETTINGS['segmentation'] = schema;
+      _SETTINGS['segmentations_current'] = schema;
     }
   });
 }
@@ -102,7 +102,7 @@ function storeSettings() {
 /* now use the function to load the defaults */
 function init_page() {
 
-  reloadSettings(_SETTINGS['segmentation']);
+  reloadSettings(_SETTINGS['segmentations_current']);
 
   presentDefaults('vowels');
   presentDefaults('diacritics');
@@ -129,8 +129,8 @@ var txt = '';
 for (var i=0; i<SETTINGS['segmentations'].length; i++) {
   var segm = SETTINGS['segmentations'][i];
   txt += '<option value="'+segm+'"';
-  console.log(SETTINGS['segmentation']);
-  if (SETTINGS['segmentation'] == segm) {
+  console.log(SETTINGS['segmentations_current']);
+  if (SETTINGS['segmentations_current'] == segm) {
     txt += ' selected';
   }
   txt += '>'+segm+'</option>';

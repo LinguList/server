@@ -14,6 +14,7 @@ import io
 import unicodedata
 import os
 from pathlib import Path
+from six import text_type
 
 def lines_to_text(lines):
     return ''.join(line if line.endswith('\n') else line + '\n' for line in lines)

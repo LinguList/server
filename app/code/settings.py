@@ -11,20 +11,21 @@ __date__="2014-12-05"
 
 import os
 import json
-from lingpy.settings import rcParams
+from lingpy.settings import rcParams, rc
+from lingpy.data.model import Model
+
 from glob import glob
 
 from .util import write_text_file, normalize_path, read_text_file
 
-SETTINGS = {}
-SETTINGS['root'] = '.'
-SETTINGS['server'] = 0
-SETTINGS['user'] = ''
-SETTINGS['pwd'] = ''
-SETTINGS['markdown'] = 'md'
+rcParams['root'] = '.'
+rcParams['server'] = 0
+rcParams['user'] = ''
+rcParams['pwd'] = ''
+rcParams['markdown'] = 'md'
 
 # get the home path of the home directory, tip taken from http://stackoverflow.com/questions/4028904/how-to-get-the-home-directory-in-python
-SETTINGS['home'] = os.path.expanduser('~')
+rcParams['home'] = os.path.expanduser('~')
 
 # starting from here, we need some settings application that can be changed and
 # overwritten by the user
@@ -44,8 +45,7 @@ def modify_segmentation(val):
         if k in seg:
             rcParams[k] = seg[k]
     
-    rcParams['segmentation'] = val['schema']
-    print(val, SETTINGS, seg)
+    rcParams['segmentations_current'] = val['schema']
 
 def show_segmentations():
     """
@@ -73,35 +73,74 @@ def load_segmentation(schema):
     
     data = read_text_file('settings/segmentation/'+schema+'.json')
     return data
-    #path = os.path.join('settings', 'segmentation', schema+'.json')
-    #if os.path.exists(path):
-    #    with open(path) as f:
-    #        data = f.read()
-    #    rcParams['segmentation'] = schema
-    #    return data
-    #else:
-    #    return False
 
 def modify_sound_classes(schema):
     """
     Modify a given sound class schema.
     """
-    pass
+    
+    # check if schema is one of the basic sound class models
+    if schema in ['asjp', 'sca', 'dolgo']:
+        rcParams['model'] = rcParams['schema']
 
-def show_sound_classes(schema):
+    # if not, we need to load the model
+    else:
+        scm = Model(normalize_path('settings/sound_classes/'+schema))
+        rcParams['model'] = scm
+
+    rcParams['sound_class_models_current'] = schema
+
+def show_sound_classes():
     """
     Show the current schema of available sound class systems.
     """
-
-    pass
+    
+    files = glob(normalize_path('settings/sound_classes/*'))
+    
+    return '\n'.join([os.path.split(f)[1] for f in files])
 
 def load_sound_classes(schema):
     """
     Load a given sound class schema.
     """
-    pass
+    
+    # read the data from text file
+    data = read_text_file('settings/sound_classes/'+schema+'/converter')
 
+    return data
+
+def store_sound_classes(data):
+    """
+    Store a user-defined sound class model.
+    """
+    
+    write_text_file('settings/sound_classes/'+data['name']+'/converter',
+            data['data'])
+
+    return 'success'
+
+def modify_schema(schema):
+    """
+    Redefine the application schema.
+    """
+    
+    # modify schema
+    rc(schema=schema)
+
+    # for temporal compatibility with older lingpy source
+    if schema == 'ipa':
+        rcParams['model'] = rcParams['sca']
+        rcParams['sound_class_models_current'] = 'sca'
+        rcParams['segmentations_current'] = 'ipa'
+    else:
+        rcParams['model'] = rcParams['asjp']
+        rcParams['sound_class_models_current'] = 'asjp'
+        rcParams['segmentations_current'] = 'asjp'
+    print('modified',schema)
+    return 'success'
 
 # additional mods to rcParams (for convenience, later it should be added
 # otherwise)
-rcParams['segmentation'] = 'sca'
+print(rcParams.keys())
+rcParams['sound_class_models_current'] = rcParams['model'].name
+rcParams['segmentations_current'] = 'ipa'

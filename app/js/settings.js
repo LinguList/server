@@ -25,21 +25,91 @@ $.ajax({
   }
 });
 
-function redefine_segmentation() {
-  var segmentations = document.getElementById('segmentations');
-  for (var i=0,option; option=segmentations.options[i]; i++) {
-    var current_segmentation = option.value;
+/* get sound classes, that is all sound class models currently available */
+$.ajax({
+  async: false,
+  url: 'index.settings?type=show_sound_classes',
+  success: function(data) {
+    SETTINGS['sound_class_models'] = data.split('\n');
+    SETTINGS['sound_class_models'].sort();
+  }
+});
+
+/* function gets selected option from a selector */
+function _get_option(selector) {
+  var slc = document.getElementById(selector);
+  for (var i=0,option; option=slc.options[i]; i++) {
+    var current_option = option.value;
 
     if (option.selected) {
       break;
     }
   }
-  console.log('current_segmentation',current_segmentation);
+
+  return current_option;
+}
+
+/* modify the schema */
+function redefine_schema() {
+
+  var current_schema = _get_option('schema');
+  $.ajax({
+    url: 'index.settings?type=modify_schema&schema='+current_schema,
+    async: false
+  });
+
+  if (schema=='asjp') {
+    SETTINGS['segmentations_current'] = 'asjp';
+  }
+  else {
+    SETTINGS['segmentations_current'] = 'sca';
+  }
+
+}
+
+/* modify the current selector */
+function redefine_segmentation() {
+
+  var current_segmentation = _get_option('segmentations');
 
   /* modify the settings */
   $.ajax({
     url: 'index.settings?type=modify_segmentation&schema='+current_segmentation,
-    async: false
+    async: true
   });
-  SETTINGS['segmentation'] = current_segmentation;
+  
+  SETTINGS['segmentations_current'] = current_segmentation;
 }
+
+/* redefine the currently basic sound class model */
+function redefine_sound_class_model() {
+
+  var current_sound_class_model = _get_option('sound_class_models');
+  
+  /* modify it */
+  $.ajax({
+    url: 'index.settings?type=modify_sound_class_model&model='+current_sound_class_model,
+    async: true
+    });
+
+  SETTINGS['sound_class_models_current'] = current_sound_class_model;
+}
+
+/* function gives values to an identifier by loading them */
+function _load_values_to_selector(idf) {
+  var out = [];
+  var slc = document.getElementById(idf);
+  var txt = '';
+  for (var i=0; i<SETTINGS[idf].length; i++) {
+    var val = SETTINGS[idf][i];
+    txt += '<option value="'+val+'"';
+    if (SETTINGS[idf+'_current'] == val) {
+      txt += ' selected';
+    }
+    txt += '>'+val+'</option>';
+    out.push(val);
+  }
+  slc.innerHTML = txt;
+  return out;
+}
+
