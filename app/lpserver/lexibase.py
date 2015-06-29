@@ -24,6 +24,13 @@ def load_sqlite(table, dbase, url=False, out=False):
     Retrieve triples from an sqlite3 database.
     """
     if url:
+        # check for short path to url
+        if url.startswith('http://') or url.startswith('https://'):
+            pass
+        else:
+            url = 'http://tsv.lingpy.org/triples/'+url
+            print(url)
+            
         # check if file already exists
         if os.path.isfile(dbase):
             os.rename(
@@ -91,7 +98,7 @@ class LexiBase(lingpy.basic.wordlist.Wordlist):
         
         if type(infile) == dict:
             lingpy.basic.wordlist.Wordlist.__init__(self, infile, **keywords)  
-        elif infile.endswith('.triples'):
+        elif type(infile) == str and infile.endswith('.triples'):
             D = lingpy.basic.ops.triple2tsv(infile, output='dict', **keywords)
 
             lingpy.basic.wordlist.Wordlist.__init__(self, D)
@@ -101,6 +108,8 @@ class LexiBase(lingpy.basic.wordlist.Wordlist):
             lingpy.basic.wordlist.Wordlist.__init__(self, D)
         else:
             lingpy.basic.wordlist.Wordlist.__init__(self,infile, **keywords)
+
+        self.blacklist = []
     
     def tokenize(self, override=True, preprocessing=False):
 
@@ -115,7 +124,89 @@ class LexiBase(lingpy.basic.wordlist.Wordlist):
 
         self.add_entries('tokens', 'tokens', lambda x: secondary_structures(x),
                 override = override)
-    def update(self, table, dbase=None, ignore=False, verbose=False):
+
+    def __getitem__(
+            self,
+            idx
+            ):
+        """
+        Method allows quick access to the data by passing the integer key.
+        """
+
+        try:
+            # return full data entry as list
+            out = self._data[idx]
+            return out
+        except KeyError:
+            try:
+                # return data entry with specified key word
+                out = self._data[idx[0]][self._header[self._alias[idx[1]]]]
+                return out
+            except IndexError:
+                try:
+                    out = self._meta[idx]
+                    return out
+                except:
+                    pass
+    
+    def add_doculect(self, doculect, values):
+        """
+        Add a new column (like a new doculect or the like) to the data.
+
+        NOTES
+        -----
+        For the moment, we assume that we are dealing with doculects and
+        concepts, which may be changed later on...
+        """
+
+        # get an index for all the values in values
+        converter = {}
+        for value in values:
+            converter[value] = {}
+
+        for k in self:
+            c = self[k,'concept']
+            for value in values:
+                converter[value][c] = self[k,value]
+
+        # now, create the wordlist
+        D = {}
+        idx = 1
+        D[0] = ['doculect', 'concept'] + values
+        for k in self.concepts:
+            D[idx] = [doculect,k] + [converter[value][k] for value in values]
+            idx += 1
+        wl = lingpy.Wordlist(D)
+        self.add_data(wl)
+        print('Successfully added new doculect template for {0}'.format(doculect))
+    
+    def remove_values(self, value, column):
+        """
+        Remove all values which match the target specification in the given
+        column.
+        """
+        blacklist = []
+        for k in self:
+            if self[k, column] == value:
+                blacklist += [k]
+
+        self.blacklist += blacklist
+        print("Expanded blacklist ({0} items), modifications will be carried out when re-creating the db.".format(len(blacklist)))
+
+    def modify_value(self, source, target, column):
+        """
+        Modify all values from source to target in a given column.
+        """
+
+        idxs = [idx for idx in self if self[idx][self.header[column]] ==
+                source]
+        for idx in idxs:
+            self[idx][self.header[column]] = target
+        print("Modified {0} entries in colum {1}.".format(
+            len(idxs), column))
+
+    def update(self, table, dbase=None, ignore=False, verbose=False,
+            delete=False):
         """
         Upload all data which was modified in the current session to the
         database, don't change those entries which have not been touched.
@@ -130,7 +221,8 @@ class LexiBase(lingpy.basic.wordlist.Wordlist):
         # file that an automatic parse has been done
         self._clean_cache()
         triples = sorted(
-                lingpy.basic.ops.tsv2triple(self, False))
+                lingpy.basic.ops.tsv2triple(self, False)
+                )
 
         # connect to dbase
         db = sqlite3.connect(dbase)
@@ -141,7 +233,6 @@ class LexiBase(lingpy.basic.wordlist.Wordlist):
         data = cursor.fetchall()
         # make dict from data
         datad = dict([((a,b),c) for a,b,c in data])
-        print(len(datad),len(triples))
         
         modified = 0
         tobemodified = []
@@ -155,7 +246,6 @@ class LexiBase(lingpy.basic.wordlist.Wordlist):
                 if (line[0],line[1]) in datad:
                     tobemodified += [line]
                     bak = True
-                    print('yes')
 
                 if (line[0],line[1]) not in datad and line[2] != '':
                     datad[line[0],line[1]] = ''
@@ -168,6 +258,10 @@ class LexiBase(lingpy.basic.wordlist.Wordlist):
         cursor.execute('delete from '+table+' where ID|":"|COL in ('+
                 ','.join(['"{0}:{1}"'.format(a,b) for a,b,c in
                     tobemodified])+');')
+
+        if delete:
+            dels = '('+','.join([str(x) for x in delete])+')'
+            cursor.execute('delete from '+table+' where ID in '+dels+';' )
 
         for a,b,c in tobemodified:
             if verbose:
@@ -182,10 +276,80 @@ class LexiBase(lingpy.basic.wordlist.Wordlist):
         cursor.execute('vacuum')
         db.commit()
         print("Automatically modified {0} cells in the data.".format(modified))
-        
-
-
     
+    def remove_empty_rows(self, doculect, entries=['entry_in_source', 'ipa','tokens']):
+        """
+        Remove rows which do not contain any data.
+        """
+
+        def check(words):
+
+            word = ''
+            for w in words:
+                if w:
+                    word += ''.join([x for x in w if x not in ' -?!0'])
+            
+            if word:
+                return True
+            else:
+                return False
+
+        blacklist = []
+        for k in self:
+
+            if self[k,'doculect'] == doculect:
+
+                tocheck = [self[k,entry] for entry in entries]
+                if check(tocheck):
+                    pass
+                else:
+                    blacklist += [k]
+        print('Added {0} entries to the blacklist.'.format(len(blacklist)))
+        self.blacklist += blacklist
+    
+    def add_data(self, wordlist):
+        """
+        Add new data (for example, one doculect) to the dbase.
+        """
+        
+        # first, we check for the headers in the wordlist
+        headers = [k for k in wordlist.header]
+        new_heads = [k for k in headers if k not in self.header]
+        
+        # we make a nasty shortcut here by assuming that concept column will
+        # always be there 
+        for nh in new_heads:
+            print('ADDING HEADERS')
+            self.add_entries(nh, 'concept', lambda x: '')
+
+        # now we start manipulating the dictionary, first we need to check for
+        # the maximum entry in our current wordlist [note that we may also
+        # consider to check for old ids in our backup, in case we deleted them
+        # before, but we leave thas as a TODO for the moment
+        idx = max(self) + 1
+        headline = sorted(self.header, key=lambda x: self.header[x])
+
+        # now we make a hash for new ids, which iterates over the max-ids
+        for k in wordlist:
+            
+            # assemble all data in the order of the header
+            new_line = []
+
+            for h in headline:
+                if h in headers:
+                    entry = wordlist[k,h]
+                    if type(entry) == list:
+                        entry = ' '.join([str(x) for x in entry])
+                    new_line += [entry]
+                else:
+                    if self._class[h] == int:
+                        new_line += [0]
+                    else:
+                        new_line += ['']
+
+            self._data[idx] = new_line
+            idx += 1
+
     def create(self, table, dbase=None, ignore=False):
         """
         Upload triple-data to sqlite3-db. Thereby, delete the previous table
@@ -195,12 +359,20 @@ class LexiBase(lingpy.basic.wordlist.Wordlist):
             dbase = self.dbase
 
         if not ignore: ignore=[]
+
         # get the triples
         triples = lingpy.basic.ops.tsv2triple(self,False)
         
         # connect to tatabase
         db = sqlite3.connect(dbase)
         cursor = db.cursor()
+
+        # check if backup exists
+        cursor.execute('select name from sqlite_master where type="table" and name="backup";')
+        check = cursor.fetchall()
+        if not check:
+            print("Adding backup to data")
+            cursor.execute('create table backup (FILE text, ID int, COL text, VAL text, DATE text, user text);') 
 
         try:
             cursor.execute('drop table '+table+';')
@@ -209,8 +381,22 @@ class LexiBase(lingpy.basic.wordlist.Wordlist):
         cursor.execute('create table '+table+' (ID int, COL text, VAL text);')
         cursor.execute('vacuum')
 
+        # write a log for the blacklist
+        with open(lingpy.rc('timestamp')+'-blacklist.log', 'w') as f:
+            f.write('ID'+'\t'+'\t'.join(sorted(self.header, key=lambda x:
+                self.header[x])))
+            for k in self.blacklist:
+                line = [str(k)]
+                for entry in self[k]:
+                    if isinstance(entry, list):
+                        line += [' '.join([str(x) for x in entry])]
+                    else:
+                        line += [str(entry)]
+                f.write('\t'.join(line)+'\n')
+
         for a,b,c in triples:
-            if b.lower() not in ignore:
+            if b.lower() not in ignore and a not in ignore and a not in \
+                    self.blacklist:
                 if type(c) == list:
                     c = ' '.join([str(x) for x in c])
                 else:
