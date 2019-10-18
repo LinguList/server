@@ -1,2 +1,2 @@
 cd app
-python server.py start
+python3 server.py start

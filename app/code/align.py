@@ -10,8 +10,8 @@ __author__="Johann-Mattis List"
 __date__="2014-12-06"
 
 from lingpy import *
-from lingpyd.convert.html import *
-from lingpyd.convert.strings import *
+from lingpy.convert.html import *
+from lingpy.convert.strings import *
 
 from .settings import rcParams
 from .util import normalize_path
